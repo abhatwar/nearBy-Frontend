@@ -43,15 +43,15 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center gap-2 sm:gap-4">
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow">
               📍
             </div>
-            <span className="font-bold text-gray-900 text-lg tracking-tight">
+            <span className="font-bold text-gray-900 text-base sm:text-lg tracking-tight truncate max-w-[150px] sm:max-w-none">
               Nearby<span className="text-blue-600">Finder</span>
             </span>
           </Link>
@@ -130,6 +130,7 @@ export default function Navbar() {
           <button
             className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle navigation menu"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen
@@ -141,7 +142,7 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="md:hidden border-t border-gray-100 py-3 space-y-1 pb-4">
+          <div className="md:hidden border-t border-gray-100 py-3 space-y-1 pb-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
             <Link to="/" className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
               🏠 Explore
             </Link>

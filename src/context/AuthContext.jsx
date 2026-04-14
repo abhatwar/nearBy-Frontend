@@ -4,6 +4,7 @@ import api from '../api/axios';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const tokenFromStorage = localStorage.getItem('nf_token');
   const [user, setUser] = useState(() => {
     try {
       const stored = localStorage.getItem('nf_user');
@@ -12,7 +13,7 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => Boolean(tokenFromStorage));
 
   const persistUser = (userData, token) => {
     setUser(userData);
@@ -49,11 +50,23 @@ export function AuthProvider({ children }) {
 
   // Refresh profile on mount if token present
   useEffect(() => {
+    let mounted = true;
+
     const token = localStorage.getItem('nf_token');
-    if (token && !user) {
-      setLoading(true);
-      refreshProfile().finally(() => setLoading(false));
+    if (!token) {
+      setLoading(false);
+      return () => {
+        mounted = false;
+      };
     }
+
+    refreshProfile().finally(() => {
+      if (mounted) setLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (

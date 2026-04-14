@@ -35,9 +35,9 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50 px-4 py-8">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50 px-4 py-6 sm:py-8">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-8">
           <div className="text-center mb-6">
             <span className="text-4xl">📍</span>
             <h1 className="text-2xl font-bold text-gray-900 mt-2">Create Account</h1>
@@ -51,7 +51,7 @@ export default function Register() {
           )}
 
           {/* Role selector */}
-          <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
             {ROLES.map((r) => (
               <button
                 key={r.value}

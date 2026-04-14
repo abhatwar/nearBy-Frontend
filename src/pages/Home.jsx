@@ -154,7 +154,7 @@ export default function Home() {
   if (!locationReady) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-lg bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8 text-center">
+        <div className="w-full max-w-lg bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6 md:p-8 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -162,7 +162,7 @@ export default function Home() {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Enable Location</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Enable Location</h1>
           <p className="text-sm text-gray-500 mb-6">
             Nearby Finder needs your location to show businesses around you when opening the site.
           </p>
@@ -178,14 +178,14 @@ export default function Home() {
               type="button"
               onClick={requestInitialLocation}
               disabled={locatingInitial}
-              className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:opacity-70"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:opacity-70"
             >
               {locatingInitial ? 'Getting location...' : 'Allow Location'}
             </button>
             <button
               type="button"
               onClick={continueWithoutLocation}
-              className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium"
             >
               Continue without location
             </button>
@@ -206,19 +206,19 @@ export default function Home() {
           <div className="absolute -bottom-10 -left-16 w-72 h-72 rounded-full bg-indigo-300" />
         </div>
 
-        <div className="relative max-w-4xl mx-auto px-4 py-16 md:py-24 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 py-12 sm:py-16 md:py-24 text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             {businesses.length > 0 ? `${businesses.length} active listings` : 'Discover local businesses'}
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight tracking-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight tracking-tight">
             Find What's{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300">
               Around You
             </span>
           </h1>
-          <p className="text-blue-100 text-lg md:text-xl mb-10 max-w-xl mx-auto leading-relaxed">
+          <p className="text-blue-100 text-base sm:text-lg md:text-xl mb-8 sm:mb-10 max-w-xl mx-auto leading-relaxed">
             Restaurants, hospitals, hotels and more — discover businesses near you instantly.
           </p>
 
@@ -246,7 +246,7 @@ export default function Home() {
 
         {/* Outside radius banner */}
         {!loading && outsideRadius && userLocation && (
-          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 mb-5 text-sm">
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 mb-5 text-sm">
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -259,8 +259,8 @@ export default function Home() {
 
         {/* Results bar */}
         {!loading && (
-          <div className="flex items-center justify-between mb-5 gap-4">
-            <p className="text-gray-500 text-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3 sm:gap-4">
+            <p className="text-gray-500 text-sm leading-relaxed">
               {userLocation ? (
                 <>Found <span className="font-semibold text-gray-700">{businesses.length}</span> businesses nearby</>
               ) : (
@@ -275,7 +275,7 @@ export default function Home() {
             </p>
 
             {/* View toggle */}
-            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1">
+            <div className="self-start sm:self-auto flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1">
               <button
                 onClick={() => setViewMode('grid')}
                 title="Grid view"
