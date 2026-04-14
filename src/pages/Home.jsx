@@ -50,7 +50,6 @@ export default function Home() {
         lat: coords.lat,
         lng: coords.lng,
         radius: activeFilters.radius || 5000,
-        fallback: true,
       };
       if (activeFilters.category) params.category = activeFilters.category;
       if (activeFilters.minRating) params.minRating = activeFilters.minRating;
@@ -263,8 +262,8 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>
-              No businesses within <strong>{usedRadius >= 1000 ? `${usedRadius / 1000} km` : `${usedRadius} m`}</strong>.
-              Showing nearest results instead — check the distance badge on each card.
+              No businesses found within <strong>{usedRadius >= 1000 ? `${usedRadius / 1000} km` : `${usedRadius} m`}</strong> of your current location.
+              Try increasing the radius or changing city/category filters.
             </span>
           </div>
         )}
@@ -341,7 +340,7 @@ export default function Home() {
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">No results found</h3>
                 <p className="text-gray-400 text-sm max-w-xs mx-auto">
                   {userLocation
-                    ? 'Try a larger radius or remove filters.'
+                    ? 'No shops at your current location in selected radius. Try increasing radius or changing filters.'
                     : 'Try clearing filters or check back later.'}
                 </p>
               </div>
