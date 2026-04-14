@@ -3,8 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import api from '../api/axios';
 import LoadingSpinner from '../components/LoadingSpinner';
+import BackButton from '../components/BackButton';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+const MAX_TOTAL_UPLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_FILE_SIZE_MB = Math.round(MAX_FILE_SIZE_BYTES / (1024 * 1024));
+const MAX_TOTAL_UPLOAD_MB = Math.round(MAX_TOTAL_UPLOAD_BYTES / (1024 * 1024));
 
 // Fix default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -174,6 +180,20 @@ export default function AddEditBusiness() {
       setError('Maximum 5 images allowed');
       return;
     }
+
+    const oversized = files.find((file) => file.size > MAX_FILE_SIZE_BYTES);
+    if (oversized) {
+      setError('Each image must be 2 MB or smaller');
+      return;
+    }
+
+    const currentBytes = images.reduce((sum, file) => sum + file.size, 0);
+    const incomingBytes = files.reduce((sum, file) => sum + file.size, 0);
+    if (currentBytes + incomingBytes > MAX_TOTAL_UPLOAD_BYTES) {
+      setError('Total upload size must stay under 4 MB to avoid deployment upload limits');
+      return;
+    }
+
     setImages((prev) => [...prev, ...files]);
   };
 
@@ -218,7 +238,13 @@ export default function AddEditBusiness() {
         setTimeout(() => navigate('/enterprise'), 2000);
       }
     } catch (err) {
-      const msg = err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || 'Failed to save business';
+      const uploadLimitMessage = `Upload too large. Keep each image <= ${MAX_FILE_SIZE_MB} MB and total <= ${MAX_TOTAL_UPLOAD_MB} MB.`;
+      const msg =
+        err.response?.status === 413
+          ? uploadLimitMessage
+          : err.code === 'ERR_NETWORK'
+            ? `${uploadLimitMessage} Please compress images and try again.`
+            : (err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || 'Failed to save business');
       setError(msg);
     } finally {
       setLoading(false);
@@ -233,6 +259,7 @@ export default function AddEditBusiness() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      <BackButton fallback="/enterprise" className="mb-3" />
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
         {isEdit ? 'Edit Business' : 'Add New Business'}
       </h1>
@@ -466,8 +493,11 @@ export default function AddEditBusiness() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 4v16m8-8H4" />
             </svg>
-            Upload Images (JPG, PNG – max 5MB each)
+            Upload Images (JPG/PNG/WebP - max 2 MB each, total 4 MB)
           </button>
+          <p className="text-xs text-gray-500 mt-2">
+            Maximum {MAX_FILE_SIZE_MB} MB per image, up to 2 images, and total upload must be under {MAX_TOTAL_UPLOAD_MB} MB.
+          </p>
           <input
             ref={fileInputRef}
             type="file"

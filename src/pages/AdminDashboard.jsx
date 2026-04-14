@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import LoadingSpinner from '../components/LoadingSpinner';
+import BackButton from '../components/BackButton';
 import StarRating from '../components/StarRating';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -89,10 +90,10 @@ export default function AdminDashboard() {
     finally { setPaymentsLoading(false); }
   };
 
-  const handleApprove = async (id) => {
+  const handleApprove = async (id, paymentRequired = false) => {
     try {
-      await api.put(`/admin/businesses/${id}/review`, { action: 'approve' });
-      setBusinesses((prev) => prev.map((b) => b._id === id ? { ...b, status: 'approved' } : b));
+      const { data } = await api.put(`/admin/businesses/${id}/review`, { action: 'approve', paymentRequired });
+      setBusinesses((prev) => prev.map((b) => b._id === id ? data.business : b));
     } catch { /* ignore */ }
   };
 
@@ -160,6 +161,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      <BackButton fallback="/" className="mb-3" />
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
 
       {/* Tabs */}
@@ -314,8 +316,10 @@ export default function AdminDashboard() {
                         <div className="flex justify-end gap-2">
                           {b.status === 'pending' && (
                             <>
-                              <button onClick={() => handleApprove(b._id)}
-                                className="text-green-600 hover:text-green-800 text-xs font-medium">Approve</button>
+                              <button onClick={() => handleApprove(b._id, false)}
+                                className="text-green-600 hover:text-green-800 text-xs font-medium">Approve & Launch</button>
+                              <button onClick={() => handleApprove(b._id, true)}
+                                className="text-blue-600 hover:text-blue-800 text-xs font-medium">Approve + Payment</button>
                               <button onClick={() => handleReject(b._id)}
                                 className="text-yellow-600 hover:text-yellow-800 text-xs font-medium">Reject</button>
                             </>

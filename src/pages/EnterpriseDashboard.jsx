@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import BackButton from '../components/BackButton';
 import StarRating from '../components/StarRating';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -23,11 +24,8 @@ export default function EnterpriseDashboard() {
   const [selectedBiz, setSelectedBiz] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [payStatus, setPayStatus] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [payHistory, setPayHistory] = useState([]);
-  const [payHistoryLoading, setPayHistoryLoading] = useState(false);
-  const [showPayHistory, setShowPayHistory] = useState(false);
+  const [payStatus, setPayStatus] = useState('');
 
   const fetchBusinesses = async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true);
@@ -43,20 +41,6 @@ export default function EnterpriseDashboard() {
 
   useEffect(() => { fetchBusinesses(); }, []);
 
-  const fetchPayHistory = async () => {
-    setPayHistoryLoading(true);
-    try {
-      const { data } = await api.get('/enterprise/payments');
-      setPayHistory(data.payments);
-    } catch { /* ignore */ }
-    finally { setPayHistoryLoading(false); }
-  };
-
-  const togglePayHistory = () => {
-    if (!showPayHistory && payHistory.length === 0) fetchPayHistory();
-    setShowPayHistory((v) => !v);
-  };
-
   const loadAnalytics = async (bizId) => {
     setAnalyticsLoading(true);
     try {
@@ -69,15 +53,20 @@ export default function EnterpriseDashboard() {
 
   const handlePayment = async (biz) => {
     setPayStatus('');
-    if (!window.Razorpay) {
-      setPayStatus('❌ Payment SDK not loaded. Please refresh the page and try again.');
-      return;
-    }
     try {
-      // Step 1: create Razorpay order on backend
       const { data } = await api.post('/payment/create-order', { businessId: biz._id });
 
-      // Step 2: open Razorpay checkout
+      if (data?.bypass) {
+        setPayStatus(`✅ ${biz.name} is now active!`);
+        setBusinesses((prev) => prev.map((b) => b._id === biz._id ? { ...b, isActive: true } : b));
+        return;
+      }
+
+      if (!window.Razorpay) {
+        setPayStatus('❌ Payment SDK not loaded. Please refresh the page and try again.');
+        return;
+      }
+
       const options = {
         key: data.keyId,
         amount: data.amount,
@@ -86,7 +75,6 @@ export default function EnterpriseDashboard() {
         description: `Activate listing: ${biz.name}`,
         order_id: data.orderId,
         handler: async (response) => {
-          // Step 3: verify payment on backend
           try {
             await api.post('/payment/verify', {
               razorpayOrderId: response.razorpay_order_id,
@@ -104,9 +92,6 @@ export default function EnterpriseDashboard() {
         },
         prefill: { name: user?.name, email: user?.email },
         theme: { color: '#2563eb' },
-        modal: {
-          ondismiss: () => setPayStatus('⚠️ Payment cancelled.'),
-        },
       };
 
       const rzp = new window.Razorpay(options);
@@ -136,31 +121,24 @@ export default function EnterpriseDashboard() {
   }));
 
   const pendingCount = businesses.filter((b) => b.status === 'pending').length;
-  const awaitingPayment = businesses.filter((b) => b.status === 'approved' && !b.isActive);
-
+  const awaitingPaymentCount = businesses.filter((b) => b.status === 'approved' && !b.isActive).length;
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Enterprise Dashboard</h1>
-          <p className="text-sm text-gray-400 mt-0.5">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <BackButton fallback="/" className="mb-3" />
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-gray-800 leading-tight">Enterprise Dashboard</h1>
+          <p className="text-sm text-gray-400 mt-0.5 break-words">
             Logged in as <span className="font-medium text-gray-600">{user?.name}</span>
             <span className="mx-1.5 text-gray-300">·</span>
             <span className="text-gray-500">{user?.email}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={togglePayHistory}
-            className="flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 font-medium"
-            title="Payment history"
-          >
-            💳 Payments
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => fetchBusinesses(true)}
             disabled={refreshing}
-            className="flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 font-medium disabled:opacity-50"
+            className="flex-1 sm:flex-none min-w-[90px] flex items-center justify-center gap-1.5 text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 font-medium disabled:opacity-50"
             title="Refresh list"
           >
             <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,7 +148,7 @@ export default function EnterpriseDashboard() {
           </button>
           <Link
             to="/enterprise/add-business"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+            className="flex-1 sm:flex-none min-w-[140px] bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
           >
             <span>+</span> Add Business
           </Link>
@@ -184,7 +162,7 @@ export default function EnterpriseDashboard() {
       )}
 
       {payStatus && (
-        <div className={`rounded-lg px-4 py-3 mb-5 text-sm ${payStatus.startsWith('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+        <div className={`rounded-lg px-4 py-3 mb-5 text-sm ${payStatus.startsWith('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600 border border-red-100'}`}>
           {payStatus}
         </div>
       )}
@@ -198,21 +176,21 @@ export default function EnterpriseDashboard() {
               {pendingCount} business{pendingCount > 1 ? 'es are' : ' is'} pending admin review
             </p>
             <p className="text-yellow-600 text-xs mt-0.5">
-              We'll activate them for listing once approved. This usually takes a few hours.
+              Admin can launch directly or mark payment required before launch.
             </p>
           </div>
         </div>
       )}
 
-      {awaitingPayment.length > 0 && (
+      {awaitingPaymentCount > 0 && (
         <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3 text-sm">
           <span className="text-xl">💳</span>
           <div>
             <p className="font-medium text-orange-800">
-              {awaitingPayment.length} approved business{awaitingPayment.length > 1 ? 'es are' : ' is'} awaiting payment
+              {awaitingPaymentCount} approved business{awaitingPaymentCount > 1 ? 'es are' : ' is'} waiting for payment
             </p>
             <p className="text-orange-600 text-xs mt-0.5">
-              Pay ₹11 per business to make them visible in search results.
+              These were approved by admin with payment required.
             </p>
           </div>
         </div>
@@ -228,7 +206,7 @@ export default function EnterpriseDashboard() {
           </Link>
         </div>
       ) : (
-        <div className="grid md:grid-cols-5 gap-6">
+        <div className="grid md:grid-cols-5 gap-4 sm:gap-6">
           {/* Business list */}
           <div className="md:col-span-2 space-y-3">
             {businesses.map((biz) => (
@@ -239,12 +217,14 @@ export default function EnterpriseDashboard() {
                 }`}
                 onClick={() => loadAnalytics(biz._id)}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-800 truncate">{biz.name}</p>
                     <p className="text-xs text-gray-400 capitalize">{biz.category}</p>
                   </div>
-                  <StatusBadge status={biz.status} isActive={biz.isActive} />
+                  <div className="self-start">
+                    <StatusBadge status={biz.status} isActive={biz.isActive} />
+                  </div>
                 </div>
 
                 <div className="flex gap-2 mt-3 flex-wrap">
@@ -253,7 +233,7 @@ export default function EnterpriseDashboard() {
                       onClick={(e) => { e.stopPropagation(); handlePayment(biz); }}
                       className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors font-medium"
                     >
-                      Pay ₹11 to Activate
+                      Pay to Activate
                     </button>
                   )}
                   <Link
@@ -292,7 +272,7 @@ export default function EnterpriseDashboard() {
             ) : analytics ? (
               <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
                 <h2 className="text-lg font-semibold text-gray-800 mb-5">Analytics</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                   {[
                     { label: 'Views', value: analytics.views, icon: '👁️' },
                     { label: 'Clicks', value: analytics.clicks, icon: '🖱️' },
@@ -348,52 +328,6 @@ export default function EnterpriseDashboard() {
                 )}
               </div>
             ) : null}
-          </div>
-        </div>
-      )}
-
-      {/* Payment History slide-in panel */}
-      {showPayHistory && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/40" onClick={() => setShowPayHistory(false)} />
-          <div className="w-full max-w-lg bg-white h-full overflow-y-auto shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-              <h3 className="font-semibold text-gray-800">Payment History</h3>
-              <button onClick={() => setShowPayHistory(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
-            </div>
-            {payHistoryLoading ? (
-              <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>
-            ) : payHistory.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                <p className="text-4xl mb-3">💳</p>
-                <p className="text-gray-400">No payments yet</p>
-              </div>
-            ) : (
-              <div className="p-5 space-y-3">
-                {payHistory.map((p) => (
-                  <div key={p._id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-medium text-gray-800">{p.business?.name || '—'}</p>
-                        <p className="text-xs text-gray-400 capitalize">{p.business?.category || ''}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-green-600">₹{(p.amount / 100).toFixed(0)}</p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          p.status === 'paid' ? 'bg-green-100 text-green-700' :
-                          p.status === 'failed' ? 'bg-red-100 text-red-600' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>{p.status}</span>
-                      </div>
-                    </div>
-                    {p.razorpayPaymentId && (
-                      <p className="text-xs text-gray-400 font-mono mt-2">ID: {p.razorpayPaymentId}</p>
-                    )}
-                    <p className="text-xs text-gray-400 mt-1">{new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}
