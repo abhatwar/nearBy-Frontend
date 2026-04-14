@@ -19,6 +19,77 @@ const CATEGORIES = [
   'pharmacy', 'grocery', 'bank', 'education', 'entertainment', 'other',
 ];
 
+const MAHARASHTRA_LOCATIONS = [
+  'Mumbai',
+  'Pune',
+  'Nagpur',
+  'Nashik',
+  'Thane',
+  'Aurangabad',
+  'Solapur',
+  'Kolhapur',
+  'Amravati',
+  'Nanded',
+  'Sangli',
+  'Jalgaon',
+  'Akola',
+  'Latur',
+  'Dhule',
+  'Ahmednagar',
+  'Chandrapur',
+  'Parbhani',
+  'Satara',
+  'Beed',
+  'Yavatmal',
+  'Panvel',
+  'Malegaon',
+  'Bhiwandi',
+  'Ulhasnagar',
+  'Gondia',
+  'Bhandara',
+  // Common talukas
+  'Haveli',
+  'Mulshi',
+  'Maval',
+  'Khed',
+  'Junnar',
+  'Ambegaon',
+  'Baramati',
+  'Indapur',
+  'Daund',
+  'Shirur',
+  'Karjat',
+  'Panvel Taluka',
+  'Alibag',
+  'Roha',
+  'Mahad',
+  'Chiplun',
+  'Dapoli',
+  'Kankavli',
+  'Sawantwadi',
+  'Satara Taluka',
+  'Wai',
+  'Karad',
+  'Phaltan',
+  'Patan',
+  'Miraj',
+  'Tasgaon',
+  'Kagal',
+  'Panhala',
+  'Hatkanangale',
+  'Niphad',
+  'Sinnar',
+  'Igatpuri',
+  'Yeola',
+  'Malegaon Taluka',
+  'Parner',
+  'Sangamner',
+  'Rahata',
+  'Shrirampur',
+  'Nevasa',
+  'Akole',
+];
+
 // Map click handler component
 function LocationPicker({ onSelect }) {
   useMapEvents({
@@ -38,6 +109,7 @@ export default function AddEditBusiness() {
     description: '',
     lat: '',
     lng: '',
+    city: '',
     address: '',
     phone: '',
     email: '',
@@ -65,6 +137,7 @@ export default function AddEditBusiness() {
             description: b.description || '',
             lat: lat?.toString() || '',
             lng: lng?.toString() || '',
+            city: b.location?.city || '',
             address: b.location?.address || '',
             phone: b.contactInfo?.phone || '',
             email: b.contactInfo?.email || '',
@@ -245,7 +318,7 @@ export default function AddEditBusiness() {
           </div>
           <p className="text-xs text-gray-400 mb-3">Click on the map to set your business location</p>
 
-          <div className="grid md:grid-cols-3 gap-3">
+          <div className="grid md:grid-cols-4 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Latitude</label>
               <input
@@ -267,6 +340,23 @@ export default function AddEditBusiness() {
                 readOnly
                 className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-gray-50"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">City / Taluka</label>
+              <input
+                list="mh-location-options-business"
+                type="text"
+                name="city"
+                value={form.city}
+                onChange={handleChange}
+                placeholder="Select or type Maharashtra city/taluka"
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              />
+              <datalist id="mh-location-options-business">
+                {MAHARASHTRA_LOCATIONS.map((location) => (
+                  <option key={location} value={location} />
+                ))}
+              </datalist>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Address</label>

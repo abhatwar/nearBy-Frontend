@@ -5,16 +5,22 @@ import BusinessCard from '../components/BusinessCard';
 import MapView from '../components/MapView';
 import api from '../api/axios';
 
+const LOCATION_DECISION_KEY = 'nf_location_decision';
+const STORED_LOCATION_KEY = 'nf_user_location';
+
 export default function Home() {
   const [businesses, setBusinesses] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [locationReady, setLocationReady] = useState(false);
+  const [locatingInitial, setLocatingInitial] = useState(false);
+  const [locationInitError, setLocationInitError] = useState('');
   const [outsideRadius, setOutsideRadius] = useState(false);
   const [usedRadius, setUsedRadius] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
-  const [filters, setFilters] = useState({ category: '', radius: 5000, minRating: '' });
+  const [filters, setFilters] = useState({ category: '', radius: 5000, minRating: '', city: '' });
 
   const fetchAll = useCallback(async (activeFilters, query = '') => {
     setLoading(true);
@@ -23,6 +29,7 @@ export default function Home() {
       const params = {};
       if (activeFilters.category) params.category = activeFilters.category;
       if (activeFilters.minRating) params.minRating = activeFilters.minRating;
+      if (activeFilters.city) params.city = activeFilters.city;
       if (query) params.search = query;
       const { data } = await api.get('/businesses', { params });
       setBusinesses(data.businesses);
@@ -45,6 +52,7 @@ export default function Home() {
       };
       if (activeFilters.category) params.category = activeFilters.category;
       if (activeFilters.minRating) params.minRating = activeFilters.minRating;
+      if (activeFilters.city) params.city = activeFilters.city;
       if (query) params.search = query;
       const { data } = await api.get('/businesses/nearby', { params });
       setBusinesses(data.businesses);
@@ -57,14 +65,53 @@ export default function Home() {
     }
   }, []);
 
-  // Load all businesses on mount
-  useEffect(() => { fetchAll({ category: '', radius: 5000, minRating: '' }); }, [fetchAll]);
+  const continueWithoutLocation = useCallback(() => {
+    setUserLocation(null);
+    setLocationInitError('');
+    setLocationReady(true);
+    localStorage.setItem(LOCATION_DECISION_KEY, 'skipped');
+    localStorage.removeItem(STORED_LOCATION_KEY);
+    fetchAll(filters, searchQuery);
+  }, [fetchAll, filters, searchQuery]);
+
+  const requestInitialLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationInitError('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setLocatingInitial(true);
+    setLocationInitError('');
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const coordsObj = { lat: coords.latitude, lng: coords.longitude };
+        setUserLocation(coordsObj);
+        setLocatingInitial(false);
+        setLocationReady(true);
+        localStorage.setItem(LOCATION_DECISION_KEY, 'granted');
+        localStorage.setItem(STORED_LOCATION_KEY, JSON.stringify(coordsObj));
+        fetchNearby(coordsObj, filters, searchQuery);
+      },
+      () => {
+        setLocatingInitial(false);
+        setLocationInitError('Location permission denied. Showing all businesses.');
+        localStorage.setItem(LOCATION_DECISION_KEY, 'denied');
+        localStorage.removeItem(STORED_LOCATION_KEY);
+        setLocationReady(true);
+        fetchAll(filters, searchQuery);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }, [fetchNearby, fetchAll, filters, searchQuery]);
 
   const handleSearch = ({ lat, lng, query }) => {
     const coords = { lat, lng };
     const q = query || '';
     setUserLocation(coords);
     setSearchQuery(q);
+    localStorage.setItem(LOCATION_DECISION_KEY, 'granted');
+    localStorage.setItem(STORED_LOCATION_KEY, JSON.stringify(coords));
     fetchNearby(coords, filters, q);
   };
 
@@ -76,6 +123,77 @@ export default function Home() {
       fetchAll(newFilters, searchQuery);
     }
   };
+
+  useEffect(() => {
+    const decision = localStorage.getItem(LOCATION_DECISION_KEY);
+    const savedLocation = localStorage.getItem(STORED_LOCATION_KEY);
+
+    if (decision === 'granted' && savedLocation) {
+      try {
+        const parsed = JSON.parse(savedLocation);
+        if (parsed?.lat && parsed?.lng) {
+          setUserLocation(parsed);
+          setLocationReady(true);
+          fetchNearby(parsed, { category: '', radius: 5000, minRating: '', city: '' }, '');
+          return;
+        }
+      } catch (_) {
+        localStorage.removeItem(STORED_LOCATION_KEY);
+      }
+    }
+
+    if (decision === 'skipped' || decision === 'denied') {
+      setLocationReady(true);
+      fetchAll({ category: '', radius: 5000, minRating: '', city: '' }, '');
+      return;
+    }
+
+    setLoading(false);
+  }, [fetchAll, fetchNearby]);
+
+  if (!locationReady) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-lg bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8 text-center">
+          <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Enable Location</h1>
+          <p className="text-sm text-gray-500 mb-6">
+            Nearby Finder needs your location to show businesses around you when opening the site.
+          </p>
+
+          {locationInitError && (
+            <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-2 text-sm mb-4">
+              {locationInitError}
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              type="button"
+              onClick={requestInitialLocation}
+              disabled={locatingInitial}
+              className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:opacity-70"
+            >
+              {locatingInitial ? 'Getting location...' : 'Allow Location'}
+            </button>
+            <button
+              type="button"
+              onClick={continueWithoutLocation}
+              className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium"
+            >
+              Continue without location
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -150,6 +268,9 @@ export default function Home() {
               )}
               {filters.category && (
                 <span className="ml-1 text-blue-600 font-medium capitalize">· {filters.category}</span>
+              )}
+              {filters.city && (
+                <span className="ml-1 text-emerald-600 font-medium">· {filters.city}</span>
               )}
             </p>
 
