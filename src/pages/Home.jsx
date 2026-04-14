@@ -127,6 +127,10 @@ export default function Home() {
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
+    if (newFilters.city) {
+      fetchAll(newFilters, searchQuery);
+      return;
+    }
     if (userLocation) {
       fetchNearby(userLocation, newFilters, searchQuery);
     } else {
