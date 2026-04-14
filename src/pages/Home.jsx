@@ -19,6 +19,7 @@ export default function Home() {
   const [locationInitError, setLocationInitError] = useState('');
   const [outsideRadius, setOutsideRadius] = useState(false);
   const [usedRadius, setUsedRadius] = useState(null);
+  const [cityOptions, setCityOptions] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   const [filters, setFilters] = useState({ category: '', radius: 5000, minRating: '', city: '' });
 
@@ -49,6 +50,7 @@ export default function Home() {
         lat: coords.lat,
         lng: coords.lng,
         radius: activeFilters.radius || 5000,
+        fallback: true,
       };
       if (activeFilters.category) params.category = activeFilters.category;
       if (activeFilters.minRating) params.minRating = activeFilters.minRating;
@@ -62,6 +64,15 @@ export default function Home() {
       setError(err.response?.data?.message || 'Failed to fetch businesses');
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchCityOptions = useCallback(async () => {
+    try {
+      const { data } = await api.get('/businesses/cities');
+      setCityOptions((data.cities || []).map((c) => c.city).filter(Boolean));
+    } catch {
+      setCityOptions([]);
     }
   }, []);
 
@@ -125,6 +136,7 @@ export default function Home() {
   };
 
   useEffect(() => {
+    fetchCityOptions();
     const decision = localStorage.getItem(LOCATION_DECISION_KEY);
     const savedLocation = localStorage.getItem(STORED_LOCATION_KEY);
 
@@ -149,7 +161,7 @@ export default function Home() {
     }
 
     setLoading(false);
-  }, [fetchAll, fetchNearby]);
+  }, [fetchAll, fetchNearby, fetchCityOptions]);
 
   if (!locationReady) {
     return (
@@ -231,7 +243,7 @@ export default function Home() {
 
         {/* Filters */}
         <div className="mb-6">
-          <FilterPanel filters={filters} onChange={handleFilterChange} />
+          <FilterPanel filters={filters} onChange={handleFilterChange} cityOptions={cityOptions} />
         </div>
 
         {/* Error */}

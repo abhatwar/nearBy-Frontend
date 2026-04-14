@@ -92,8 +92,9 @@ const MAHARASHTRA_LOCATIONS = [
   'Akole',
 ];
 
-export default function FilterPanel({ filters, onChange }) {
+export default function FilterPanel({ filters, onChange, cityOptions = [] }) {
   const update = (key, val) => onChange({ ...filters, [key]: val });
+  const locations = cityOptions.length > 0 ? cityOptions : MAHARASHTRA_LOCATIONS;
 
   return (
     <div className="space-y-3 w-full">
@@ -132,7 +133,7 @@ export default function FilterPanel({ filters, onChange }) {
             className="text-sm text-gray-700 bg-transparent focus:outline-none font-medium w-full"
           />
           <datalist id="mh-location-options">
-            {MAHARASHTRA_LOCATIONS.map((location) => (
+            {locations.map((location) => (
               <option key={location} value={location} />
             ))}
           </datalist>
