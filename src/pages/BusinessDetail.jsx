@@ -88,6 +88,11 @@ export default function BusinessDetail() {
     api.post(`/businesses/${id}/lead`).catch(() => {});
   };
 
+  const getWhatsAppUrl = (phone) => {
+    const digitsOnly = String(phone || '').replace(/\D/g, '');
+    return digitsOnly ? `https://wa.me/${digitsOnly}` : null;
+  };
+
   if (loading) return <LoadingSpinner />;
   if (error) return (
     <div className="max-w-2xl mx-auto text-center py-24 px-4">
@@ -98,6 +103,8 @@ export default function BusinessDetail() {
   );
 
   const [lng, lat] = business.location.coordinates;
+  const phone = business.contactInfo?.phone;
+  const whatsappUrl = getWhatsAppUrl(phone);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -179,12 +186,14 @@ export default function BusinessDetail() {
             <div className="mt-5 space-y-2">
               {business.contactInfo?.phone && (
                 <a
-                  href={`tel:${business.contactInfo.phone}`}
+                  href={whatsappUrl || `tel:${phone}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={handleLeadTrack}
                   className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
                 >
                   <span className="text-lg">📞</span>
-                  <span>{business.contactInfo.phone}</span>
+                  <span>{phone}</span>
                 </a>
               )}
               {business.contactInfo?.email && (
